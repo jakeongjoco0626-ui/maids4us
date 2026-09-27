@@ -140,13 +140,13 @@ export default function PricingPage() {
           </div>
 
           <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-            Cleaning Service Pricing
+            House Cleaning Prices in New York City
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg font-medium leading-8 text-slate-200 sm:text-xl">
-            Choose the cleaning option that works best for your home.
-            MAIDS'4US provides professional and reliable cleaning services
-            with straightforward hourly pricing.
+            Compare MAIDS'4US hourly house cleaning rates for homes and apartments
+            across Manhattan, Brooklyn, Queens, and the Bronx. Choose the option
+            that fits your cleaning needs, supplies, and schedule.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
@@ -172,7 +172,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-7xl">
           <div className="mb-12 text-center">
             <p className="text-sm font-black uppercase tracking-[0.2em] text-[#0369A1]">
-              OUR RATES
+              NYC CLEANING RATES
             </p>
 
             <h2 className="mt-3 text-3xl font-black tracking-tight text-[#071A33] sm:text-4xl">
@@ -253,8 +253,27 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* SERVICE AREA */}
+      <section className="border-y-2 border-slate-900 bg-[#E0F2FE] px-6 py-14 lg:px-10">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-[#0369A1]">
+            NEW YORK CITY SERVICE AREA
+          </p>
+
+          <h2 className="mt-3 text-3xl font-black text-[#071A33] sm:text-4xl">
+            Cleaning Services Across NYC
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-3xl font-medium leading-7 text-slate-700">
+            MAIDS&apos;4US provides house and apartment cleaning services in
+            Manhattan, Brooklyn, Queens, and the Bronx. Availability may vary by
+            date, time, service type, and cleaner availability.
+          </p>
+        </div>
+      </section>
+
       {/* HOW PRICING WORKS */}
-      <section className="border-y-2 border-slate-900 bg-white px-6 py-16 lg:px-10">
+      <section className="border-b-2 border-slate-900 bg-white px-6 py-16 lg:px-10">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10 text-center">
             <p className="text-sm font-black uppercase tracking-[0.2em] text-[#0369A1]">
@@ -377,12 +396,12 @@ export default function PricingPage() {
       <section className="border-t-2 border-slate-900 bg-[#38BDF8] px-6 py-16 lg:px-10">
         <div className="mx-auto max-w-4xl text-center">
           <h2 className="text-3xl font-black tracking-tight text-[#071A33] sm:text-4xl">
-            Ready for a Cleaner Home?
+            Ready to Book House Cleaning in NYC?
           </h2>
 
           <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-7 text-[#071A33]">
-            Choose your cleaning option and schedule your service with
-            MAIDS'4US today.
+            Choose your cleaning option and schedule your MAIDS'4US service
+            in Manhattan, Brooklyn, Queens, or the Bronx.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">

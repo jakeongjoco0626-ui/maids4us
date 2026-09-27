@@ -169,17 +169,17 @@ export default function ServicesPage() {
       <section className="bg-slate-950 px-6 py-20 text-white">
         <div className="mx-auto max-w-5xl text-center">
           <p className="mb-4 text-sm font-bold uppercase tracking-[0.25em] text-blue-400">
-            Professional House Cleaning
+            NYC House Cleaning Services
           </p>
 
           <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-            Cleaning Services You Can Count On
+            House Cleaning Services in New York City
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300">
-            From regular home cleaning to deep cleaning, emergency services,
-            and specialty cleaning, MAIDS'4US is here to help keep your space
-            clean, fresh, and comfortable.
+            MAIDS'4US provides professional house cleaning across Manhattan,
+            Brooklyn, Queens, and the Bronx, including regular cleaning, deep
+            cleaning, same-day service, emergency cleaning, and specialty care.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
@@ -209,12 +209,12 @@ export default function ServicesPage() {
             </p>
 
             <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">
-              Cleaning Services for Every Situation
+              Professional NYC Cleaning Services for Every Situation
             </h2>
 
             <p className="mt-4 text-lg leading-8 text-slate-600">
               Choose the cleaning service that fits your home, schedule, and
-              cleaning needs.
+              cleaning needs across Manhattan, Brooklyn, Queens, and the Bronx.
             </p>
           </div>
 
@@ -271,7 +271,7 @@ export default function ServicesPage() {
             </p>
 
             <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">
-              A Cleaner Home. A Happier You. 🏡✨
+              Trusted House Cleaning Across NYC
             </h2>
           </div>
 
@@ -281,7 +281,7 @@ export default function ServicesPage() {
                 Professional & Thorough
               </h3>
               <p className="mt-3 leading-7 text-slate-600">
-                Our cleaning services are designed with attention to detail
+                Our NYC cleaning services are designed with attention to detail
                 from kitchens and bathrooms to bedrooms and living spaces.
               </p>
             </div>
@@ -302,7 +302,7 @@ export default function ServicesPage() {
               </h3>
               <p className="mt-3 leading-7 text-slate-600">
                 Choose regular, deep, same-day, emergency, or specialty
-                cleaning based on what your home needs.
+                cleaning for homes across New York City.
               </p>
             </div>
           </div>
@@ -318,12 +318,12 @@ export default function ServicesPage() {
             </p>
 
             <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">
-              Choose the Service That Fits Your Needs
+              Simple House Cleaning Pricing in NYC
             </h2>
 
             <p className="mt-4 text-lg leading-8 text-slate-600">
-              Straightforward hourly pricing with options for regular,
-              same-day, emergency, and specialty cleaning.
+              Straightforward hourly pricing for New York City homes, with options
+              for regular, same-day, emergency, and specialty cleaning.
             </p>
           </div>
 
@@ -469,7 +469,7 @@ export default function ServicesPage() {
             </p>
 
             <h2 className="text-3xl font-black text-slate-950 sm:text-4xl">
-              Getting Your Home Clean Is Easy
+              Booking Your NYC Cleaning Is Easy
             </h2>
           </div>
 
@@ -528,7 +528,7 @@ export default function ServicesPage() {
 
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-blue-50">
             Join MAIDS'4US and become part of our growing professional
-            cleaning team.
+            cleaning team serving New York City.
           </p>
 
           <Link
@@ -550,7 +550,7 @@ export default function ServicesPage() {
             </div>
 
             <p className="mt-4 max-w-sm leading-7 text-slate-400">
-              Professional, friendly, and reliable house cleaning services.
+              Professional, friendly, and reliable house cleaning services in Manhattan, Brooklyn, Queens, and the Bronx.
             </p>
           </div>
 
