@@ -4,11 +4,19 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
+const SERVICE_PRICES: Record<string, number> = {
+  "Regular Cleaning - Client Supplies": 55,
+  "Regular Cleaning - We Bring Supplies": 65,
+  "Deep Cleaning - Client Supplies": 55,
+  "Deep Cleaning - We Bring Supplies": 65,
+  "Same-Day Booking": 85,
+  "Biohazard Cleaning": 95,
+};
+
 export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-
   const [service, setService] = useState("");
   const [supplies, setSupplies] = useState("");
 
@@ -24,83 +32,46 @@ export default function BookingPage() {
     const form = event.currentTarget;
     const formData = new FormData(form);
 
-    const firstName = String(
-      formData.get("firstName") || ""
-    ).trim();
+    const firstName = String(formData.get("firstName") || "").trim();
+    const lastName = String(formData.get("lastName") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const phone = String(formData.get("phone") || "").trim();
 
-    const lastName = String(
-      formData.get("lastName") || ""
-    ).trim();
+    const selectedService = String(formData.get("service") || "").trim();
+    const selectedSupplies = String(formData.get("supplies") || "").trim();
 
-    const email = String(
-      formData.get("email") || ""
-    ).trim();
-
-    const phone = String(
-      formData.get("phone") || ""
-    ).trim();
-
-    const selectedService = String(
-      formData.get("service") || ""
-    ).trim();
-
-    const selectedSupplies = String(
-      formData.get("supplies") || ""
-    ).trim();
-
-    const preferredDate = String(
-      formData.get("date") || ""
-    ).trim();
-
-    const preferredTime = String(
-      formData.get("time") || ""
-    ).trim();
-
-    const streetAddress = String(
-      formData.get("address") || ""
-    ).trim();
-
-    const city = String(
-      formData.get("city") || ""
-    ).trim();
-
-    const state = String(
-      formData.get("state") || ""
-    ).trim();
-
-    const zipCode = String(
-      formData.get("zip") || ""
-    ).trim();
-
-    const additionalDetails = String(
-      formData.get("message") || ""
-    ).trim();
-
-    const smsConsent =
-      formData.get("smsConsent") === "on";
-
-    /*
-     * Regular and Deep cleaning require the
-     * customer to choose a supplies option.
-     *
-     * Same-Day and Biohazard already include
-     * MAIDS'4US supplies.
-     */
     const requiresSupplies =
       selectedService === "Regular Cleaning" ||
       selectedService === "Deep Cleaning";
 
-    const suppliesForBooking =
-      requiresSupplies
-        ? selectedSupplies
-        : selectedService === "Same-Day Booking" ||
-            selectedService === "Biohazard Cleaning"
-          ? "We Provide Cleaning Materials"
-          : selectedSupplies;
+    const suppliesForBooking = requiresSupplies
+      ? selectedSupplies
+      : selectedService === "Same-Day Booking" ||
+          selectedService === "Biohazard Cleaning"
+        ? "We Provide Cleaning Materials"
+        : selectedSupplies;
 
-    /* ========================================
+    const preferredDate = String(formData.get("date") || "").trim();
+    const preferredTime = String(formData.get("time") || "").trim();
+
+    const streetAddress = String(formData.get("address") || "").trim();
+    const city = String(formData.get("city") || "").trim();
+    const state = String(formData.get("state") || "").trim();
+    const zipCode = String(formData.get("zip") || "").trim();
+
+    const additionalDetails = String(
+      formData.get("message") || "",
+    ).trim();
+
+    const serviceSmsConsent =
+      formData.get("serviceSmsConsent") === "on";
+
+    const marketingSmsConsent =
+      formData.get("marketingSmsConsent") === "on";
+
+    /* =========================
        VALIDATION
-    ======================================== */
+    ========================== */
 
     if (
       !firstName ||
@@ -117,63 +88,59 @@ export default function BookingPage() {
       !zipCode
     ) {
       setErrorMessage(
-        "Please complete all required fields before submitting your booking."
+        "Please complete all required fields before submitting your booking.",
       );
 
       setSubmitting(false);
       return;
     }
 
-    /* ========================================
+    /* =========================
        PRICE
-    ======================================== */
+    ========================== */
 
     let invoiceAmount = 0;
 
     if (selectedService === "Same-Day Booking") {
       invoiceAmount = 85;
-    } else if (
-      selectedService === "Biohazard Cleaning"
-    ) {
+    } else if (selectedService === "Biohazard Cleaning") {
       invoiceAmount = 95;
     } else if (
       selectedService === "Regular Cleaning" &&
-      selectedSupplies ===
-        "You Provide Cleaning Materials"
+      selectedSupplies === "You Provide Cleaning Materials"
     ) {
       invoiceAmount = 55;
     } else if (
       selectedService === "Regular Cleaning" &&
-      selectedSupplies ===
-        "We Provide Cleaning Materials"
+      selectedSupplies === "We Provide Cleaning Materials"
     ) {
       invoiceAmount = 65;
     } else if (
       selectedService === "Deep Cleaning" &&
-      selectedSupplies ===
-        "You Provide Cleaning Materials"
+      selectedSupplies === "You Provide Cleaning Materials"
     ) {
       invoiceAmount = 55;
     } else if (
       selectedService === "Deep Cleaning" &&
-      selectedSupplies ===
-        "We Provide Cleaning Materials"
+      selectedSupplies === "We Provide Cleaning Materials"
     ) {
       invoiceAmount = 65;
     }
 
     if (invoiceAmount === 0) {
       setErrorMessage(
-        "Unable to determine the price for this service. Please select your service and supplies option again."
+        "Unable to determine the price for this service. Please select your service and supplies option again.",
       );
 
       setSubmitting(false);
       return;
     }
 
-    /* ========================================
+    const consentTimestamp = new Date().toISOString();
+
+    /* =========================
        CREATE BOOKING
-    ======================================== */
+    ========================== */
 
     const booking = {
       first_name: firstName,
@@ -192,8 +159,7 @@ export default function BookingPage() {
       state,
       zip_code: zipCode,
 
-      additional_details:
-        additionalDetails || null,
+      additional_details: additionalDetails || null,
 
       status: "pending",
 
@@ -204,16 +170,21 @@ export default function BookingPage() {
 
       customer_id: null,
 
-      /*
-       * 10DLC SMS consent
-       */
-      sms_consent: smsConsent,
-
-      sms_consent_at: smsConsent
-        ? new Date().toISOString()
+      // Booking / service SMS consent
+      sms_consent: serviceSmsConsent,
+      sms_consent_at: serviceSmsConsent
+        ? consentTimestamp
+        : null,
+      sms_consent_source: serviceSmsConsent
+        ? "/booking"
         : null,
 
-      sms_consent_source: smsConsent
+      // Marketing SMS consent
+      sms_marketing_consent: marketingSmsConsent,
+      sms_marketing_consent_at: marketingSmsConsent
+        ? consentTimestamp
+        : null,
+      sms_marketing_consent_source: marketingSmsConsent
         ? "/booking"
         : null,
     };
@@ -226,16 +197,16 @@ export default function BookingPage() {
       console.error("BOOKING ERROR:", error);
 
       setErrorMessage(
-        `Unable to submit your booking.\n\n${error.message}`
+        `Unable to submit your booking.\n\n${error.message}`,
       );
 
       setSubmitting(false);
       return;
     }
 
-    /* ========================================
+    /* =========================
        SUCCESS
-    ======================================== */
+    ========================== */
 
     setSuccess(true);
     setSubmitting(false);
@@ -253,9 +224,9 @@ export default function BookingPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
-      {/* ========================================
+      {/* =========================
           HEADER
-      ======================================== */}
+      ========================== */}
 
       <header className="border-b-2 border-[#0B1F3A] bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
@@ -278,9 +249,9 @@ export default function BookingPage() {
         </div>
       </header>
 
-      {/* ========================================
+      {/* =========================
           PAGE INTRO
-      ======================================== */}
+      ========================== */}
 
       <section className="bg-[#0B1F3A] px-6 py-16 text-white">
         <div className="mx-auto max-w-5xl">
@@ -301,20 +272,18 @@ export default function BookingPage() {
         </div>
       </section>
 
-      {/* ========================================
+      {/* =========================
           FORM
-      ======================================== */}
+      ========================== */}
 
       <section className="px-6 py-12 md:py-20">
         <div className="mx-auto max-w-4xl">
-          {/* SUCCESS */}
+          {/* SUCCESS MESSAGE */}
 
           {success && (
             <div className="mb-8 rounded-2xl border-2 border-green-600 bg-green-50 p-6">
               <div className="flex gap-4">
-                <div className="text-3xl">
-                  ✅
-                </div>
+                <div className="text-3xl">✅</div>
 
                 <div>
                   <h2 className="text-2xl font-black text-green-800">
@@ -325,9 +294,9 @@ export default function BookingPage() {
                     Thank you for choosing
                     MAIDS&apos;4US. Your booking
                     request has been received
-                    successfully. Our team will
-                    review your request and contact
-                    you to confirm the appointment.
+                    successfully. Our team will review
+                    your request and contact you to
+                    confirm the appointment.
                   </p>
 
                   <Link
@@ -341,7 +310,7 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* ERROR */}
+          {/* ERROR MESSAGE */}
 
           {errorMessage && (
             <div className="mb-8 rounded-2xl border-2 border-red-500 bg-red-50 p-6">
@@ -362,9 +331,9 @@ export default function BookingPage() {
               onSubmit={handleSubmit}
               className="rounded-3xl border-2 border-[#0B1F3A] bg-white p-6 shadow-xl md:p-10"
             >
-              {/* ========================================
+              {/* =========================
                   CUSTOMER INFORMATION
-              ======================================== */}
+              ========================== */}
 
               <div>
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
@@ -449,15 +418,20 @@ export default function BookingPage() {
                     className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                   />
 
-                  <p className="mt-2 text-sm text-slate-500">
-                    Please include your US area code.
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Required so our team can contact
+                    you about your booking. Providing
+                    your phone number does not
+                    automatically enroll you in SMS
+                    messaging. SMS consent is
+                    optional below.
                   </p>
                 </div>
               </div>
 
-              {/* ========================================
-                  CLEANING SERVICE
-              ======================================== */}
+              {/* =========================
+                  SERVICE
+              ========================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
@@ -483,15 +457,12 @@ export default function BookingPage() {
                     required
                     value={service}
                     onChange={(event) => {
-                      const nextService =
-                        event.target.value;
-
-                      setService(nextService);
+                      setService(event.target.value);
 
                       if (
-                        nextService ===
+                        event.target.value ===
                           "Same-Day Booking" ||
-                        nextService ===
+                        event.target.value ===
                           "Biohazard Cleaning"
                       ) {
                         setSupplies("");
@@ -521,10 +492,7 @@ export default function BookingPage() {
                   </select>
                 </div>
 
-                {/* SUPPLIES */}
-
-                {(service ===
-                  "Regular Cleaning" ||
+                {(service === "Regular Cleaning" ||
                   service === "Deep Cleaning") && (
                   <div className="mt-6">
                     <label
@@ -541,7 +509,7 @@ export default function BookingPage() {
                       value={supplies}
                       onChange={(event) =>
                         setSupplies(
-                          event.target.value
+                          event.target.value,
                         )
                       }
                       className="w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
@@ -551,19 +519,17 @@ export default function BookingPage() {
                       </option>
 
                       <option value="You Provide Cleaning Materials">
-                        You Provide Cleaning
-                        Materials — $55/hour
+                        You Provide Cleaning Materials
+                        — $55/hour
                       </option>
 
                       <option value="We Provide Cleaning Materials">
-                        We Provide Cleaning
-                        Materials — $65/hour
+                        We Provide Cleaning Materials —
+                        $65/hour
                       </option>
                     </select>
                   </div>
                 )}
-
-                {/* PRICE PREVIEW */}
 
                 {service && (
                   <div className="mt-6 rounded-2xl border-2 border-[#1683FF] bg-blue-50 p-5">
@@ -628,9 +594,9 @@ export default function BookingPage() {
                 )}
               </div>
 
-              {/* ========================================
+              {/* =========================
                   DATE & TIME
-              ======================================== */}
+              ========================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
@@ -677,7 +643,6 @@ export default function BookingPage() {
                       id="time"
                       name="time"
                       required
-                      defaultValue=""
                       className="w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                     >
                       <option value="">
@@ -756,9 +721,9 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* ========================================
-                  CLEANING LOCATION
-              ======================================== */}
+              {/* =========================
+                  ADDRESS
+              ========================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
@@ -1002,9 +967,9 @@ export default function BookingPage() {
                 </div>
               </div>
 
-              {/* ========================================
+              {/* =========================
                   ADDITIONAL DETAILS
-              ======================================== */}
+              ========================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
@@ -1025,82 +990,144 @@ export default function BookingPage() {
                 />
               </div>
 
-              {/* ========================================
+              {/* =========================
                   SMS CONSENT
-              ======================================== */}
+              ========================== */}
 
               <div className="mt-10 rounded-2xl border-2 border-[#1683FF] bg-blue-50 p-5">
-                <div className="flex items-start gap-3">
+                <h2 className="text-xl font-black text-[#0B1F3A]">
+                  SMS Messaging Preferences
+                </h2>
+
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  Text messaging is optional. Choose
+                  the types of messages you would
+                  like to receive from
+                  MAIDS&apos;4US.
+                </p>
+
+                {/* BOOKING & SERVICE SMS */}
+
+                <div className="mt-6 flex items-start gap-3">
                   <input
-                    id="smsConsent"
-                    name="smsConsent"
+                    id="serviceSmsConsent"
+                    name="serviceSmsConsent"
                     type="checkbox"
                     className="mt-1 h-5 w-5 shrink-0 rounded border-2 border-slate-400 text-[#1683FF] focus:ring-[#1683FF]"
                   />
 
                   <div>
                     <label
-                      htmlFor="smsConsent"
+                      htmlFor="serviceSmsConsent"
                       className="font-bold text-[#0B1F3A]"
                     >
-                      SMS Messaging Consent
-                      (Optional)
+                      Booking &amp; Service SMS
+                      Consent (Optional)
                     </label>
 
                     <p className="mt-2 text-sm leading-6 text-slate-700">
                       By checking this box, I agree
                       to receive SMS messages from
-                      MAIDS&apos;4US, including
-                      booking updates, appointment
-                      reminders, customer care
-                      messages, service notifications,
-                      and occasional promotional or
-                      marketing offers. Message
-                      frequency may vary. Message and
-                      data rates may apply. Reply{" "}
+                      MAIDS&apos;4US related to my
+                      cleaning services, including
+                      booking confirmations,
+                      appointment reminders,
+                      scheduling updates, cleaner or
+                      service updates, and customer
+                      care communications.
+                    </p>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                      Message frequency may vary.
+                      Message and data rates may
+                      apply. Reply{" "}
                       <strong>STOP</strong> to opt
                       out or{" "}
-                      <strong>HELP</strong> for
-                      help. Consent is not a
-                      condition of purchase.
-                    </p>
-
-                    <p className="mt-3 text-sm leading-6 text-slate-700">
-                      Please review our{" "}
-                      <Link
-                        href="/privacy-policy"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-bold text-[#1683FF] underline hover:text-blue-700"
-                      >
-                        Privacy Policy
-                      </Link>{" "}
-                      and{" "}
-                      <Link
-                        href="/terms"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-bold text-[#1683FF] underline hover:text-blue-700"
-                      >
-                        Terms &amp; Conditions
-                      </Link>
-                      .
-                    </p>
-
-                    <p className="mt-3 text-xs leading-5 text-slate-500">
-                      This checkbox is optional and
-                      is not selected by default.
-                      You may submit your booking
-                      request without agreeing to
-                      receive SMS messages.
+                      <strong>HELP</strong> for help.
                     </p>
                   </div>
                 </div>
+
+                {/* MARKETING SMS */}
+
+                <div className="mt-6 border-t border-blue-200 pt-6">
+                  <div className="flex items-start gap-3">
+                    <input
+                      id="marketingSmsConsent"
+                      name="marketingSmsConsent"
+                      type="checkbox"
+                      className="mt-1 h-5 w-5 shrink-0 rounded border-2 border-slate-400 text-[#1683FF] focus:ring-[#1683FF]"
+                    />
+
+                    <div>
+                      <label
+                        htmlFor="marketingSmsConsent"
+                        className="font-bold text-[#0B1F3A]"
+                      >
+                        Marketing SMS Consent
+                        (Optional)
+                      </label>
+
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        By checking this box, I agree
+                        to receive occasional
+                        promotional and marketing SMS
+                        messages from
+                        MAIDS&apos;4US, including
+                        special offers, discounts,
+                        service promotions, and other
+                        MAIDS&apos;4US marketing
+                        messages.
+                      </p>
+
+                      <p className="mt-2 text-sm leading-6 text-slate-700">
+                        Message frequency may vary.
+                        Message and data rates may
+                        apply. Reply{" "}
+                        <strong>STOP</strong> to opt
+                        out or{" "}
+                        <strong>HELP</strong> for help.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="mt-6 text-sm leading-6 text-slate-700">
+                  Please review our{" "}
+                  <Link
+                    href="/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-[#1683FF] underline hover:text-blue-700"
+                  >
+                    Privacy Policy
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-[#1683FF] underline hover:text-blue-700"
+                  >
+                    Terms &amp; Conditions
+                  </Link>
+                  .
+                </p>
+
+                <p className="mt-3 text-xs leading-5 text-slate-500">
+                  Both SMS choices are optional and
+                  are not selected by default.
+                  Consent to receive SMS messages is
+                  not a condition of purchasing or
+                  receiving MAIDS&apos;4US services.
+                  You may submit your booking request
+                  without selecting either option.
+                </p>
               </div>
 
-              {/* ========================================
-                  BOOKING NOTICE
-              ======================================== */}
+              {/* =========================
+                  IMPORTANT NOTICE
+              ========================== */}
 
               <div className="mt-10 rounded-2xl border-2 border-slate-300 bg-slate-50 p-5">
                 <h3 className="font-black text-[#0B1F3A]">
@@ -1118,9 +1145,9 @@ export default function BookingPage() {
                 </p>
               </div>
 
-              {/* ========================================
+              {/* =========================
                   SUBMIT
-              ======================================== */}
+              ========================== */}
 
               <button
                 type="submit"
@@ -1142,9 +1169,9 @@ export default function BookingPage() {
         </div>
       </section>
 
-      {/* ========================================
+      {/* =========================
           FOOTER
-      ======================================== */}
+      ========================== */}
 
       <footer className="bg-[#0B1F3A] px-6 py-10 text-center text-white">
         <Link
