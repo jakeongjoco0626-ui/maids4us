@@ -4,15 +4,6 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-const SERVICE_PRICES: Record<string, number> = {
-  "Regular Cleaning - Client Supplies": 55,
-  "Regular Cleaning - We Bring Supplies": 65,
-  "Deep Cleaning - Client Supplies": 55,
-  "Deep Cleaning - We Bring Supplies": 65,
-  "Same-Day Booking": 85,
-  "Biohazard Cleaning": 95,
-};
-
 export default function BookingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -85,9 +76,31 @@ export default function BookingPage() {
       formData.get("message") || ""
     ).trim();
 
-    /* =========================
+    const smsConsent =
+      formData.get("smsConsent") === "on";
+
+    /*
+     * Regular and Deep cleaning require the
+     * customer to choose a supplies option.
+     *
+     * Same-Day and Biohazard already include
+     * MAIDS'4US supplies.
+     */
+    const requiresSupplies =
+      selectedService === "Regular Cleaning" ||
+      selectedService === "Deep Cleaning";
+
+    const suppliesForBooking =
+      requiresSupplies
+        ? selectedSupplies
+        : selectedService === "Same-Day Booking" ||
+            selectedService === "Biohazard Cleaning"
+          ? "We Provide Cleaning Materials"
+          : selectedSupplies;
+
+    /* ========================================
        VALIDATION
-    ========================== */
+    ======================================== */
 
     if (
       !firstName ||
@@ -95,7 +108,7 @@ export default function BookingPage() {
       !email ||
       !phone ||
       !selectedService ||
-      !selectedSupplies ||
+      (requiresSupplies && !selectedSupplies) ||
       !preferredDate ||
       !preferredTime ||
       !streetAddress ||
@@ -111,34 +124,40 @@ export default function BookingPage() {
       return;
     }
 
-    /* =========================
+    /* ========================================
        PRICE
-    ========================== */
+    ======================================== */
 
     let invoiceAmount = 0;
 
     if (selectedService === "Same-Day Booking") {
       invoiceAmount = 85;
-    } else if (selectedService === "Biohazard Cleaning") {
+    } else if (
+      selectedService === "Biohazard Cleaning"
+    ) {
       invoiceAmount = 95;
     } else if (
       selectedService === "Regular Cleaning" &&
-      selectedSupplies === "You Provide Cleaning Materials"
+      selectedSupplies ===
+        "You Provide Cleaning Materials"
     ) {
       invoiceAmount = 55;
     } else if (
       selectedService === "Regular Cleaning" &&
-      selectedSupplies === "We Provide Cleaning Materials"
+      selectedSupplies ===
+        "We Provide Cleaning Materials"
     ) {
       invoiceAmount = 65;
     } else if (
       selectedService === "Deep Cleaning" &&
-      selectedSupplies === "You Provide Cleaning Materials"
+      selectedSupplies ===
+        "You Provide Cleaning Materials"
     ) {
       invoiceAmount = 55;
     } else if (
       selectedService === "Deep Cleaning" &&
-      selectedSupplies === "We Provide Cleaning Materials"
+      selectedSupplies ===
+        "We Provide Cleaning Materials"
     ) {
       invoiceAmount = 65;
     }
@@ -152,24 +171,29 @@ export default function BookingPage() {
       return;
     }
 
-    /* =========================
+    /* ========================================
        CREATE BOOKING
-    ========================== */
+    ======================================== */
 
     const booking = {
       first_name: firstName,
       last_name: lastName,
       email,
       phone,
+
       cleaning_service: selectedService,
-      supplies_option: selectedSupplies,
+      supplies_option: suppliesForBooking,
+
       preferred_date: preferredDate,
       preferred_time: preferredTime,
+
       street_address: streetAddress,
       city,
       state,
       zip_code: zipCode,
-      additional_details: additionalDetails || null,
+
+      additional_details:
+        additionalDetails || null,
 
       status: "pending",
 
@@ -179,6 +203,19 @@ export default function BookingPage() {
       paid_at: null,
 
       customer_id: null,
+
+      /*
+       * 10DLC SMS consent
+       */
+      sms_consent: smsConsent,
+
+      sms_consent_at: smsConsent
+        ? new Date().toISOString()
+        : null,
+
+      sms_consent_source: smsConsent
+        ? "/booking"
+        : null,
     };
 
     const { error } = await supabase
@@ -196,14 +233,15 @@ export default function BookingPage() {
       return;
     }
 
-    /* =========================
+    /* ========================================
        SUCCESS
-    ========================== */
+    ======================================== */
 
     setSuccess(true);
     setSubmitting(false);
 
     form.reset();
+
     setService("");
     setSupplies("");
 
@@ -215,19 +253,20 @@ export default function BookingPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
-
-      {/* =========================
+      {/* ========================================
           HEADER
-      ========================== */}
+      ======================================== */}
 
       <header className="border-b-2 border-[#0B1F3A] bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-
           <Link
             href="/"
             className="text-2xl font-black tracking-tight text-[#0B1F3A]"
           >
-            MAIDS<span className="text-[#1683FF]">'4US</span>
+            MAIDS
+            <span className="text-[#1683FF]">
+              &apos;4US
+            </span>
           </Link>
 
           <Link
@@ -236,17 +275,15 @@ export default function BookingPage() {
           >
             ← Back to Home
           </Link>
-
         </div>
       </header>
 
-      {/* =========================
+      {/* ========================================
           PAGE INTRO
-      ========================== */}
+      ======================================== */}
 
       <section className="bg-[#0B1F3A] px-6 py-16 text-white">
         <div className="mx-auto max-w-5xl">
-
           <p className="font-black uppercase tracking-widest text-[#1683FF]">
             Booking Application
           </p>
@@ -256,43 +293,41 @@ export default function BookingPage() {
           </h1>
 
           <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-200">
-            Tell us about your cleaning needs, preferred date, and location.
-            Our team will review your request and contact you to confirm your
-            booking.
+            Tell us about your cleaning needs,
+            preferred date, and location. Our team
+            will review your request and contact you
+            to confirm your booking.
           </p>
-
         </div>
       </section>
 
-      {/* =========================
+      {/* ========================================
           FORM
-      ========================== */}
+      ======================================== */}
 
       <section className="px-6 py-12 md:py-20">
-
         <div className="mx-auto max-w-4xl">
-
-          {/* SUCCESS MESSAGE */}
+          {/* SUCCESS */}
 
           {success && (
             <div className="mb-8 rounded-2xl border-2 border-green-600 bg-green-50 p-6">
-
               <div className="flex gap-4">
-
                 <div className="text-3xl">
                   ✅
                 </div>
 
                 <div>
-
                   <h2 className="text-2xl font-black text-green-800">
                     Booking Application Submitted!
                   </h2>
 
                   <p className="mt-2 leading-7 text-green-700">
-                    Thank you for choosing MAIDS'4US. Your booking request has
-                    been received successfully. Our team will review your
-                    request and contact you to confirm the appointment.
+                    Thank you for choosing
+                    MAIDS&apos;4US. Your booking
+                    request has been received
+                    successfully. Our team will
+                    review your request and contact
+                    you to confirm the appointment.
                   </p>
 
                   <Link
@@ -301,19 +336,15 @@ export default function BookingPage() {
                   >
                     Back to Home
                   </Link>
-
                 </div>
-
               </div>
-
             </div>
           )}
 
-          {/* ERROR MESSAGE */}
+          {/* ERROR */}
 
           {errorMessage && (
             <div className="mb-8 rounded-2xl border-2 border-red-500 bg-red-50 p-6">
-
               <h2 className="text-xl font-black text-red-800">
                 Booking Could Not Be Submitted
               </h2>
@@ -321,7 +352,6 @@ export default function BookingPage() {
               <p className="mt-2 whitespace-pre-line text-red-700">
                 {errorMessage}
               </p>
-
             </div>
           )}
 
@@ -332,10 +362,9 @@ export default function BookingPage() {
               onSubmit={handleSubmit}
               className="rounded-3xl border-2 border-[#0B1F3A] bg-white p-6 shadow-xl md:p-10"
             >
-
-              {/* =========================
+              {/* ========================================
                   CUSTOMER INFORMATION
-              ========================== */}
+              ======================================== */}
 
               <div>
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
@@ -343,14 +372,12 @@ export default function BookingPage() {
                 </h2>
 
                 <p className="mt-2 text-slate-600">
-                  Please provide your contact information.
+                  Please provide your contact
+                  information.
                 </p>
               </div>
 
               <div className="mt-8 grid gap-6 md:grid-cols-2">
-
-                {/* FIRST NAME */}
-
                 <div>
                   <label
                     htmlFor="firstName"
@@ -368,8 +395,6 @@ export default function BookingPage() {
                     className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                   />
                 </div>
-
-                {/* LAST NAME */}
 
                 <div>
                   <label
@@ -389,8 +414,6 @@ export default function BookingPage() {
                   />
                 </div>
 
-                {/* EMAIL */}
-
                 <div>
                   <label
                     htmlFor="email"
@@ -408,8 +431,6 @@ export default function BookingPage() {
                     className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                   />
                 </div>
-
-                {/* PHONE */}
 
                 <div>
                   <label
@@ -432,25 +453,23 @@ export default function BookingPage() {
                     Please include your US area code.
                   </p>
                 </div>
-
               </div>
 
-              {/* =========================
-                  SERVICE
-              ========================== */}
+              {/* ========================================
+                  CLEANING SERVICE
+              ======================================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
-
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
                   Cleaning Service
                 </h2>
 
                 <p className="mt-2 text-slate-600">
-                  Select the type of cleaning you need.
+                  Select the type of cleaning you
+                  need.
                 </p>
 
                 <div className="mt-6">
-
                   <label
                     htmlFor="service"
                     className="mb-2 block font-bold text-slate-800"
@@ -464,18 +483,22 @@ export default function BookingPage() {
                     required
                     value={service}
                     onChange={(event) => {
-                      setService(event.target.value);
+                      const nextService =
+                        event.target.value;
+
+                      setService(nextService);
 
                       if (
-                        event.target.value === "Same-Day Booking" ||
-                        event.target.value === "Biohazard Cleaning"
+                        nextService ===
+                          "Same-Day Booking" ||
+                        nextService ===
+                          "Biohazard Cleaning"
                       ) {
                         setSupplies("");
                       }
                     }}
                     className="w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                   >
-
                     <option value="">
                       Select a cleaning service
                     </option>
@@ -495,17 +518,15 @@ export default function BookingPage() {
                     <option value="Biohazard Cleaning">
                       Biohazard Cleaning — $95/hour
                     </option>
-
                   </select>
-
                 </div>
 
                 {/* SUPPLIES */}
 
-                {(service === "Regular Cleaning" ||
+                {(service ===
+                  "Regular Cleaning" ||
                   service === "Deep Cleaning") && (
                   <div className="mt-6">
-
                     <label
                       htmlFor="supplies"
                       className="mb-2 block font-bold text-slate-800"
@@ -519,33 +540,33 @@ export default function BookingPage() {
                       required
                       value={supplies}
                       onChange={(event) =>
-                        setSupplies(event.target.value)
+                        setSupplies(
+                          event.target.value
+                        )
                       }
                       className="w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                     >
-
                       <option value="">
                         Select an option
                       </option>
 
                       <option value="You Provide Cleaning Materials">
-                        You Provide Cleaning Materials — $55/hour
+                        You Provide Cleaning
+                        Materials — $55/hour
                       </option>
 
                       <option value="We Provide Cleaning Materials">
-                        We Provide Cleaning Materials — $65/hour
+                        We Provide Cleaning
+                        Materials — $65/hour
                       </option>
-
                     </select>
-
                   </div>
                 )}
 
-                {/* PRICE INFORMATION */}
+                {/* PRICE PREVIEW */}
 
                 {service && (
                   <div className="mt-6 rounded-2xl border-2 border-[#1683FF] bg-blue-50 p-5">
-
                     <p className="font-black text-[#0B1F3A]">
                       Selected Service
                     </p>
@@ -554,7 +575,8 @@ export default function BookingPage() {
                       {service}
                     </p>
 
-                    {service === "Regular Cleaning" &&
+                    {service ===
+                      "Regular Cleaning" &&
                       supplies ===
                         "You Provide Cleaning Materials" && (
                         <p className="mt-2 text-lg font-black text-[#1683FF]">
@@ -562,7 +584,8 @@ export default function BookingPage() {
                         </p>
                       )}
 
-                    {service === "Regular Cleaning" &&
+                    {service ===
+                      "Regular Cleaning" &&
                       supplies ===
                         "We Provide Cleaning Materials" && (
                         <p className="mt-2 text-lg font-black text-[#1683FF]">
@@ -570,7 +593,8 @@ export default function BookingPage() {
                         </p>
                       )}
 
-                    {service === "Deep Cleaning" &&
+                    {service ===
+                      "Deep Cleaning" &&
                       supplies ===
                         "You Provide Cleaning Materials" && (
                         <p className="mt-2 text-lg font-black text-[#1683FF]">
@@ -578,7 +602,8 @@ export default function BookingPage() {
                         </p>
                       )}
 
-                    {service === "Deep Cleaning" &&
+                    {service ===
+                      "Deep Cleaning" &&
                       supplies ===
                         "We Provide Cleaning Materials" && (
                         <p className="mt-2 text-lg font-black text-[#1683FF]">
@@ -586,41 +611,38 @@ export default function BookingPage() {
                         </p>
                       )}
 
-                    {service === "Same-Day Booking" && (
+                    {service ===
+                      "Same-Day Booking" && (
                       <p className="mt-2 text-lg font-black text-[#1683FF]">
                         $85/hour
                       </p>
                     )}
 
-                    {service === "Biohazard Cleaning" && (
+                    {service ===
+                      "Biohazard Cleaning" && (
                       <p className="mt-2 text-lg font-black text-[#1683FF]">
                         $95/hour
                       </p>
                     )}
-
                   </div>
                 )}
-
               </div>
 
-              {/* =========================
+              {/* ========================================
                   DATE & TIME
-              ========================== */}
+              ======================================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
-
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
                   Preferred Schedule
                 </h2>
 
                 <p className="mt-2 text-slate-600">
-                  Tell us when you would like your cleaning service.
+                  Tell us when you would like your
+                  cleaning service.
                 </p>
 
                 <div className="mt-6 grid gap-6 md:grid-cols-2">
-
-                  {/* DATE */}
-
                   <div>
                     <label
                       htmlFor="date"
@@ -634,12 +656,14 @@ export default function BookingPage() {
                       name="date"
                       type="date"
                       required
-                      min={new Date().toISOString().split("T")[0]}
+                      min={
+                        new Date()
+                          .toISOString()
+                          .split("T")[0]
+                      }
                       className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                     />
                   </div>
-
-                  {/* TIME */}
 
                   <div>
                     <label
@@ -653,9 +677,9 @@ export default function BookingPage() {
                       id="time"
                       name="time"
                       required
+                      defaultValue=""
                       className="w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                     >
-
                       <option value="">
                         Select a preferred time
                       </option>
@@ -727,33 +751,26 @@ export default function BookingPage() {
                       <option value="12:00 AM">
                         12:00 AM
                       </option>
-
                     </select>
-
                   </div>
-
                 </div>
-
               </div>
 
-              {/* =========================
-                  ADDRESS
-              ========================== */}
+              {/* ========================================
+                  CLEANING LOCATION
+              ======================================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
-
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
                   Cleaning Location
                 </h2>
 
                 <p className="mt-2 text-slate-600">
-                  Where should our cleaning team provide the service?
+                  Where should our cleaning team
+                  provide the service?
                 </p>
 
                 <div className="mt-6 space-y-6">
-
-                  {/* STREET */}
-
                   <div>
                     <label
                       htmlFor="address"
@@ -773,9 +790,6 @@ export default function BookingPage() {
                   </div>
 
                   <div className="grid gap-6 md:grid-cols-3">
-
-                    {/* CITY */}
-
                     <div>
                       <label
                         htmlFor="city"
@@ -794,8 +808,6 @@ export default function BookingPage() {
                       />
                     </div>
 
-                    {/* STATE */}
-
                     <div>
                       <label
                         htmlFor="state"
@@ -811,66 +823,162 @@ export default function BookingPage() {
                         defaultValue=""
                         className="w-full rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                       >
-
                         <option value="">
                           Select State
                         </option>
 
-                        <option value="AL">Alabama</option>
-                        <option value="AK">Alaska</option>
-                        <option value="AZ">Arizona</option>
-                        <option value="AR">Arkansas</option>
-                        <option value="CA">California</option>
-                        <option value="CO">Colorado</option>
-                        <option value="CT">Connecticut</option>
-                        <option value="DE">Delaware</option>
-                        <option value="FL">Florida</option>
-                        <option value="GA">Georgia</option>
-                        <option value="HI">Hawaii</option>
-                        <option value="ID">Idaho</option>
-                        <option value="IL">Illinois</option>
-                        <option value="IN">Indiana</option>
-                        <option value="IA">Iowa</option>
-                        <option value="KS">Kansas</option>
-                        <option value="KY">Kentucky</option>
-                        <option value="LA">Louisiana</option>
-                        <option value="ME">Maine</option>
-                        <option value="MD">Maryland</option>
-                        <option value="MA">Massachusetts</option>
-                        <option value="MI">Michigan</option>
-                        <option value="MN">Minnesota</option>
-                        <option value="MS">Mississippi</option>
-                        <option value="MO">Missouri</option>
-                        <option value="MT">Montana</option>
-                        <option value="NE">Nebraska</option>
-                        <option value="NV">Nevada</option>
-                        <option value="NH">New Hampshire</option>
-                        <option value="NJ">New Jersey</option>
-                        <option value="NM">New Mexico</option>
-                        <option value="NY">New York</option>
-                        <option value="NC">North Carolina</option>
-                        <option value="ND">North Dakota</option>
-                        <option value="OH">Ohio</option>
-                        <option value="OK">Oklahoma</option>
-                        <option value="OR">Oregon</option>
-                        <option value="PA">Pennsylvania</option>
-                        <option value="RI">Rhode Island</option>
-                        <option value="SC">South Carolina</option>
-                        <option value="SD">South Dakota</option>
-                        <option value="TN">Tennessee</option>
-                        <option value="TX">Texas</option>
-                        <option value="UT">Utah</option>
-                        <option value="VT">Vermont</option>
-                        <option value="VA">Virginia</option>
-                        <option value="WA">Washington</option>
-                        <option value="WV">West Virginia</option>
-                        <option value="WI">Wisconsin</option>
-                        <option value="WY">Wyoming</option>
-
+                        <option value="AL">
+                          Alabama
+                        </option>
+                        <option value="AK">
+                          Alaska
+                        </option>
+                        <option value="AZ">
+                          Arizona
+                        </option>
+                        <option value="AR">
+                          Arkansas
+                        </option>
+                        <option value="CA">
+                          California
+                        </option>
+                        <option value="CO">
+                          Colorado
+                        </option>
+                        <option value="CT">
+                          Connecticut
+                        </option>
+                        <option value="DE">
+                          Delaware
+                        </option>
+                        <option value="FL">
+                          Florida
+                        </option>
+                        <option value="GA">
+                          Georgia
+                        </option>
+                        <option value="HI">
+                          Hawaii
+                        </option>
+                        <option value="ID">
+                          Idaho
+                        </option>
+                        <option value="IL">
+                          Illinois
+                        </option>
+                        <option value="IN">
+                          Indiana
+                        </option>
+                        <option value="IA">
+                          Iowa
+                        </option>
+                        <option value="KS">
+                          Kansas
+                        </option>
+                        <option value="KY">
+                          Kentucky
+                        </option>
+                        <option value="LA">
+                          Louisiana
+                        </option>
+                        <option value="ME">
+                          Maine
+                        </option>
+                        <option value="MD">
+                          Maryland
+                        </option>
+                        <option value="MA">
+                          Massachusetts
+                        </option>
+                        <option value="MI">
+                          Michigan
+                        </option>
+                        <option value="MN">
+                          Minnesota
+                        </option>
+                        <option value="MS">
+                          Mississippi
+                        </option>
+                        <option value="MO">
+                          Missouri
+                        </option>
+                        <option value="MT">
+                          Montana
+                        </option>
+                        <option value="NE">
+                          Nebraska
+                        </option>
+                        <option value="NV">
+                          Nevada
+                        </option>
+                        <option value="NH">
+                          New Hampshire
+                        </option>
+                        <option value="NJ">
+                          New Jersey
+                        </option>
+                        <option value="NM">
+                          New Mexico
+                        </option>
+                        <option value="NY">
+                          New York
+                        </option>
+                        <option value="NC">
+                          North Carolina
+                        </option>
+                        <option value="ND">
+                          North Dakota
+                        </option>
+                        <option value="OH">
+                          Ohio
+                        </option>
+                        <option value="OK">
+                          Oklahoma
+                        </option>
+                        <option value="OR">
+                          Oregon
+                        </option>
+                        <option value="PA">
+                          Pennsylvania
+                        </option>
+                        <option value="RI">
+                          Rhode Island
+                        </option>
+                        <option value="SC">
+                          South Carolina
+                        </option>
+                        <option value="SD">
+                          South Dakota
+                        </option>
+                        <option value="TN">
+                          Tennessee
+                        </option>
+                        <option value="TX">
+                          Texas
+                        </option>
+                        <option value="UT">
+                          Utah
+                        </option>
+                        <option value="VT">
+                          Vermont
+                        </option>
+                        <option value="VA">
+                          Virginia
+                        </option>
+                        <option value="WA">
+                          Washington
+                        </option>
+                        <option value="WV">
+                          West Virginia
+                        </option>
+                        <option value="WI">
+                          Wisconsin
+                        </option>
+                        <option value="WY">
+                          Wyoming
+                        </option>
                       </select>
                     </div>
-
-                    {/* ZIP */}
 
                     <div>
                       <label
@@ -890,26 +998,22 @@ export default function BookingPage() {
                         className="w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                       />
                     </div>
-
                   </div>
-
                 </div>
-
               </div>
 
-              {/* =========================
+              {/* ========================================
                   ADDITIONAL DETAILS
-              ========================== */}
+              ======================================== */}
 
               <div className="mt-12 border-t-2 border-slate-200 pt-10">
-
                 <h2 className="text-2xl font-black text-[#0B1F3A]">
                   Additional Details
                 </h2>
 
                 <p className="mt-2 text-slate-600">
-                  Tell us anything else we should know about your cleaning
-                  request.
+                  Tell us anything else we should
+                  know about your cleaning request.
                 </p>
 
                 <textarea
@@ -919,31 +1023,104 @@ export default function BookingPage() {
                   placeholder="Tell us about your home, special requests, pets, areas that need extra attention, parking information, etc."
                   className="mt-6 w-full rounded-xl border-2 border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-[#1683FF]"
                 />
-
               </div>
 
-              {/* =========================
-                  IMPORTANT NOTICE
-              ========================== */}
+              {/* ========================================
+                  SMS CONSENT
+              ======================================== */}
+
+              <div className="mt-10 rounded-2xl border-2 border-[#1683FF] bg-blue-50 p-5">
+                <div className="flex items-start gap-3">
+                  <input
+                    id="smsConsent"
+                    name="smsConsent"
+                    type="checkbox"
+                    className="mt-1 h-5 w-5 shrink-0 rounded border-2 border-slate-400 text-[#1683FF] focus:ring-[#1683FF]"
+                  />
+
+                  <div>
+                    <label
+                      htmlFor="smsConsent"
+                      className="font-bold text-[#0B1F3A]"
+                    >
+                      SMS Messaging Consent
+                      (Optional)
+                    </label>
+
+                    <p className="mt-2 text-sm leading-6 text-slate-700">
+                      By checking this box, I agree
+                      to receive SMS messages from
+                      MAIDS&apos;4US, including
+                      booking updates, appointment
+                      reminders, customer care
+                      messages, service notifications,
+                      and occasional promotional or
+                      marketing offers. Message
+                      frequency may vary. Message and
+                      data rates may apply. Reply{" "}
+                      <strong>STOP</strong> to opt
+                      out or{" "}
+                      <strong>HELP</strong> for
+                      help. Consent is not a
+                      condition of purchase.
+                    </p>
+
+                    <p className="mt-3 text-sm leading-6 text-slate-700">
+                      Please review our{" "}
+                      <Link
+                        href="/privacy-policy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-[#1683FF] underline hover:text-blue-700"
+                      >
+                        Privacy Policy
+                      </Link>{" "}
+                      and{" "}
+                      <Link
+                        href="/terms"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-[#1683FF] underline hover:text-blue-700"
+                      >
+                        Terms &amp; Conditions
+                      </Link>
+                      .
+                    </p>
+
+                    <p className="mt-3 text-xs leading-5 text-slate-500">
+                      This checkbox is optional and
+                      is not selected by default.
+                      You may submit your booking
+                      request without agreeing to
+                      receive SMS messages.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* ========================================
+                  BOOKING NOTICE
+              ======================================== */}
 
               <div className="mt-10 rounded-2xl border-2 border-slate-300 bg-slate-50 p-5">
-
                 <h3 className="font-black text-[#0B1F3A]">
                   Booking Request
                 </h3>
 
                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Submitting this form sends a booking request to
-                  MAIDS'4US. Your requested date and time are not considered
-                  confirmed until our team reviews the request and confirms
-                  your appointment.
+                  Submitting this form sends a
+                  booking request to
+                  MAIDS&apos;4US. Your requested
+                  date and time are not considered
+                  confirmed until our team reviews
+                  the request and confirms your
+                  appointment.
                 </p>
-
               </div>
 
-              {/* =========================
+              {/* ========================================
                   SUBMIT
-              ========================== */}
+              ======================================== */}
 
               <button
                 type="submit"
@@ -956,40 +1133,55 @@ export default function BookingPage() {
               </button>
 
               <p className="mt-4 text-center text-sm text-slate-500">
-                By submitting this form, you are requesting a cleaning
-                appointment with MAIDS'4US.
+                By submitting this form, you are
+                requesting a cleaning appointment
+                with MAIDS&apos;4US.
               </p>
-
             </form>
           )}
-
         </div>
-
       </section>
 
-      {/* =========================
+      {/* ========================================
           FOOTER
-      ========================== */}
+      ======================================== */}
 
       <footer className="bg-[#0B1F3A] px-6 py-10 text-center text-white">
-
         <Link
           href="/"
           className="text-2xl font-black"
         >
-          MAIDS<span className="text-[#1683FF]">'4US</span>
+          MAIDS
+          <span className="text-[#1683FF]">
+            &apos;4US
+          </span>
         </Link>
 
         <p className="mt-3 text-slate-300">
           A Cleaner Home. A Happier You. 🏡✨
         </p>
 
+        <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
+          <Link
+            href="/privacy-policy"
+            className="font-semibold text-slate-300 hover:text-[#1683FF]"
+          >
+            Privacy Policy
+          </Link>
+
+          <Link
+            href="/terms"
+            className="font-semibold text-slate-300 hover:text-[#1683FF]"
+          >
+            Terms &amp; Conditions
+          </Link>
+        </div>
+
         <p className="mt-6 text-sm text-slate-400">
-          © {new Date().getFullYear()} MAIDS'4US. All rights reserved.
+          © {new Date().getFullYear()}{" "}
+          MAIDS&apos;4US. All rights reserved.
         </p>
-
       </footer>
-
     </main>
   );
 }
